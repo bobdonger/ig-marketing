@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IG Marketing Tool</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
+
+  .header { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); color: #fff; padding: 20px 32px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header p { opacity: 0.9; margin-top: 4px; font-size: 14px; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  .panel { background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
+  .panel h2 { font-size: 16px; margin-bottom: 12px; color: #555; }
+
+  .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  input[type="text"], input[type="number"] { border: 1px solid #ddd; border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
+  input:focus { border-color: #833ab4; }
+
+  .btn { border: none; border-radius: 8px; padding: 8px 20px; font-size: 14px; cursor: pointer; font-weight: 600; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: linear-gradient(135deg, #833ab4, #fd1d1d); color: #fff; }
+  .btn-secondary { background: #e0e0e0; color: #333; }
+  .btn-danger { background: #ff4444; color: #fff; }
+  .btn-sm { padding: 4px 12px; font-size: 12px; }
+
+  .stats { display: flex; gap: 20px; margin: 12px 0; font-size: 14px; color: #777; }
+  .stats span { font-weight: 600; color: #333; }
+
+  .toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 8px; border-bottom: 2px solid #eee; color: #888; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  tr:hover { background: #fafafa; }
+  .caption-cell { max-width: 400px; word-break: break-word; }
+  .username-cell { color: #833ab4; font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-search { background: #e8f5e9; color: #2e7d32; }
+  .badge-explore { background: #e3f2fd; color: #1565c0; }
+  .badge-done { background: #f3e5f5; color: #7b1fa2; }
+  .badge-selected { background: #fff3e0; color: #e65100; }
+
+  .comment-bar { display: flex; gap: 12px; align-items: center; }
+  .comment-bar input { flex: 1; }
+
+  .task-item { padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; }
+  .task-item .task-header { display: flex; justify-content: space-between; font-size: 14px; }
+  .task-progress { height: 6px; background: #eee; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .task-progress-bar { height: 100%; background: linear-gradient(90deg, #833ab4, #fcb045); border-radius: 3px; transition: width 0.3s; }
+  .task-results { margin-top: 8px; font-size: 12px; color: #666; }
+
+  .empty { text-align: center; padding: 40px; color: #aaa; }
+  .label { font-size: 12px; color: #888; margin-bottom: 4px; }
+
+  .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #833ab4; border-radius: 50%; animation: spin 0.6s linear infinite; margin-left: 8px; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>IG Marketing Tool</h1>
+  <p>Powered by OpenCLI - Instagram Post Scraper & Batch Commenter</p>
+</div>
+
+<div class="container">
+  <!-- Scrape Panel -->
+  <div class="panel">
+    <h2>Scrape Posts</h2>
+    <div class="row">
+      <div>
+        <div class="label">Keyword</div>
+        <input type="text" id="keyword" placeholder="e.g. fitness, skincare..." style="width:220px">
+      </div>
+      <div>
+        <div class="label">User Limit</div>
+        <input type="number" id="userLimit" value="5" min="1" max="50" style="width:80px">
+      </div>
+      <div>
+        <div class="label">Posts/User</div>
+        <input type="number" id="postLimit" value="6" min="1" max="50" style="width:80px">
+      </div>
+      <button class="btn btn-primary" id="btnSearch" onclick="doSearch()">Search & Scrape</button>
+      <button class="btn btn-secondary" id="btnExplore" onclick="doExplore()">Explore Trending</button>
+    </div>
+    <div id="scrapeStatus" style="margin-top:8px; font-size:13px; color:#888;"></div>
+  </div>
+
+  <!-- Posts Panel -->
+  <div class="panel">
+    <h2>Posts</h2>
+    <div class="stats">
+      Total: <span id="statTotal">0</span> &nbsp;|&nbsp;
+      Selected: <span id="statSelected">0</span> &nbsp;|&nbsp;
+      Commented: <span id="statCommented">0</span>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-secondary btn-sm" onclick="selectAll(true)">Select All</button>
+      <button class="btn btn-secondary btn-sm" onclick="selectAll(false)">Deselect All</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAll()">Clear All</button>
+      <input type="text" id="filterInput" placeholder="Filter by keyword/username..." oninput="renderPosts()" style="margin-left:auto; width:200px;">
+    </div>
+    <div id="postsTable"></div>
+  </div>
+
+  <!-- Comment Panel -->
+  <div class="panel">
+    <h2>Batch Comment</h2>
+    <div class="comment-bar">
+      <input type="text" id="commentText" placeholder="Enter your comment text here...">
+      <button class="btn btn-primary" id="btnComment" onclick="doComment()">Send Comments</button>
+    </div>
+    <div id="commentStatus" style="margin-top:8px; font-size:13px; color:#888;"></div>
+  </div>
+
+  <!-- Tasks Panel -->
+  <div class="panel">
+    <h2>Comment Tasks</h2>
+    <div id="tasksList"></div>
+  </div>
+</div>
+
+<script>
+let posts = [];
+const BASE = window.location.protocol === 'file:'
+  ? 'http://localhost:3456'
+  : '';
+
+async function api(method, url, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + url, opts);
+  return res.json();
+}
+
+async function loadPosts() {
+  posts = await api('GET', '/api/posts');
+  renderPosts();
+}
+
+function renderPosts() {
+  const filter = document.getElementById('filterInput').value.toLowerCase();
+  const filtered = filter
+    ? posts.filter(p => p.username.toLowerCase().includes(filter) || (p.caption || '').toLowerCase().includes(filter) || (p.keyword || '').toLowerCase().includes(filter))
+    : posts;
+
+  document.getElementById('statTotal').textContent = posts.length;
+  document.getElementById('statSelected').textContent = posts.filter(p => p.selected).length;
+  document.getElementById('statCommented').textContent = posts.filter(p => p.commented).length;
+
+  if (filtered.length === 0) {
+    document.getElementById('postsTable').innerHTML = '<div class="empty">No posts yet. Use the scraper above to fetch some!</div>';
+    return;
+  }
+
+  let html = `<table>
+    <tr>
+      <th style="width:30px"></th>
+      <th>User</th>
+      <th>Caption</th>
+      <th>Post URL</th>
+      <th>Likes</th>
+      <th>Comments</th>
+      <th>Source</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>`;
+
+  for (const p of filtered) {
+    const sourceBadge = p.source === 'search'
+      ? `<span class="badge badge-search">search: ${p.keyword}</span>`
+      : '<span class="badge badge-explore">explore</span>';
+    const statusBadges = [];
+    if (p.selected) statusBadges.push('<span class="badge badge-selected">selected</span>');
+    if (p.commented) statusBadges.push('<span class="badge badge-done">commented</span>');
+
+    html += `<tr>
+      <td><input type="checkbox" ${p.selected ? 'checked' : ''} onchange="toggleSelect('${p.id}')"></td>
+      <td class="username-cell">@${esc(p.username)}</td>
+      <td class="caption-cell">${esc((p.caption || '').slice(0, 150))}${(p.caption || '').length > 150 ? '...' : ''}</td>
+      <td><a href="https://www.instagram.com/${encodeURIComponent(p.username)}/" target="_blank" title="Open profile, post #${p.index}">Post #${p.index}</a></td>
+      <td>${p.likes}</td>
+      <td>${p.comments}</td>
+      <td>${sourceBadge}</td>
+      <td>${statusBadges.join(' ') || '-'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePost('${p.id}')">Del</button></td>
+    </tr>`;
+  }
+  html += '</table>';
+  document.getElementById('postsTable').innerHTML = html;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function toggleSelect(id) {
+  await api('POST', `/api/posts/${id}/select`);
+  await loadPosts();
+}
+
+async function selectAll(selected) {
+  await api('POST', '/api/posts/select-all', { selected });
+  await loadPosts();
+}
+
+async function deletePost(id) {
+  await api('DELETE', `/api/posts/${id}`);
+  await loadPosts();
+}
+
+async function clearAll() {
+  if (!confirm('Clear all posts?')) return;
+  await api('DELETE', '/api/posts');
+  await loadPosts();
+}
+
+async function doSearch() {
+  const keyword = document.getElementById('keyword').value.trim();
+  if (!keyword) return alert('Please enter a keyword');
+  const userLimit = parseInt(document.getElementById('userLimit').value) || 5;
+  const postLimit = parseInt(document.getElementById('postLimit').value) || 6;
+
+  const btn = document.getElementById('btnSearch');
+  btn.disabled = true;
+  document.getElementById('scrapeStatus').innerHTML = 'Scraping... <span class="loading"></span>';
+
+  try {
+    const result = await api('POST', '/api/scrape/search', { keyword, userLimit, postLimit });
+    document.getElementById('scrapeStatus').textContent = `Done! Added ${result.added} posts (total: ${result.total})`;
+    await loadPosts();
+  } catch (err) {
+    document.getElementById('scrapeStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doExplore() {
+  const btn = document.getElementById('btnExplore');
+  btn.disabled = true;
+  document.getElementById('scrapeStatus').innerHTML = 'Exploring... <span class="loading"></span>';
+
+  try {
+    const result = await api('POST', '/api/scrape/explore', { limit: 20 });
+    document.getElementById('scrapeStatus').textContent = `Done! Added ${result.added} posts (total: ${result.total})`;
+    await loadPosts();
+  } catch (err) {
+    document.getElementById('scrapeStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doComment() {
+  const text = document.getElementById('commentText').value.trim();
+  if (!text) return alert('Please enter comment text');
+  const selected = posts.filter(p => p.selected && !p.commented);
+  if (selected.length === 0) return alert('No posts selected (or all already commented)');
+  if (!confirm(`Send "${text}" to ${selected.length} posts? (15-30s delay between each)`)) return;
+
+  const btn = document.getElementById('btnComment');
+  btn.disabled = true;
+  document.getElementById('commentStatus').innerHTML = 'Sending... <span class="loading"></span>';
+
+  try {
+    const result = await api('POST', '/api/comment', { text });
+    document.getElementById('commentStatus').textContent = `Task started: ${result.taskId} (${result.postsCount} posts)`;
+    pollTasks();
+  } catch (err) {
+    document.getElementById('commentStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+let taskPollTimer = null;
+async function pollTasks() {
+  const tasks = await api('GET', '/api/tasks');
+  renderTasks(tasks);
+
+  const running = tasks.some(t => t.status !== 'done');
+  if (running) {
+    clearTimeout(taskPollTimer);
+    taskPollTimer = setTimeout(() => { pollTasks(); loadPosts(); }, 3000);
+  } else {
+    await loadPosts();
+  }
+}
+
+function renderTasks(tasks) {
+  if (tasks.length === 0) {
+    document.getElementById('tasksList').innerHTML = '<div class="empty">No comment tasks yet.</div>';
+    return;
+  }
+
+  let html = '';
+  for (const t of tasks.reverse()) {
+    const pct = t.total > 0 ? Math.round(((t.completed + t.failed) / t.total) * 100) : 0;
+    html += `<div class="task-item">
+      <div class="task-header">
+        <span>${t.id}</span>
+        <span>${t.completed}/${t.total} done, ${t.failed} failed - ${t.status}</span>
+      </div>
+      <div class="task-progress"><div class="task-progress-bar" style="width:${pct}%"></div></div>
+      <div class="task-results">
+        ${t.results.map(r => `<span style="color:${r.status === 'success' ? '#2e7d32' : '#d32f2f'}">@${esc(r.username)}: ${r.status}</span>`).join(' | ')}
+      </div>
+    </div>`;
+  }
+  document.getElementById('tasksList').innerHTML = html;
+}
+
+// Init
+loadPosts();
+pollTasks();
+</script>
+</body>
+</html>
