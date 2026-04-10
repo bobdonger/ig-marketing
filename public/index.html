@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IG Marketing Tool</title>
+<title>Social Marketing Tool</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; color: #333; }
@@ -11,6 +11,16 @@
   .header { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); color: #fff; padding: 20px 32px; }
   .header h1 { font-size: 24px; font-weight: 700; }
   .header p { opacity: 0.9; margin-top: 4px; font-size: 14px; }
+
+  .platform-toggle { display: inline-flex; border-radius: 8px; overflow: hidden; margin-bottom: 12px; border: 2px solid rgba(255,255,255,0.3); }
+  .platform-toggle button { border: none; padding: 8px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.15); color: #fff; }
+  .platform-toggle button.active { background: #fff; color: #333; }
+  .platform-toggle button:hover:not(.active) { background: rgba(255,255,255,0.3); }
+
+  .badge-ig { background: #f3e5f5; color: #7b1fa2; }
+  .badge-twitter { background: #e3f2fd; color: #1565c0; }
+  .badge-facebook { background: #e3f2fd; color: #1877f2; }
+  .badge-trending { background: #fff8e1; color: #f57f17; }
 
   .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
@@ -65,18 +75,24 @@
 <body>
 
 <div class="header">
-  <h1>IG Marketing Tool</h1>
-  <p>Powered by OpenCLI - Instagram Post Scraper & Batch Commenter</p>
+  <h1>Social Marketing Tool</h1>
+  <p>Powered by OpenCLI - Instagram, Twitter & Facebook Post Scraper & Batch Commenter</p>
+  <div class="platform-toggle" style="margin-top:12px">
+    <button class="active" onclick="switchPlatform('instagram')">Instagram</button>
+    <button onclick="switchPlatform('twitter')">Twitter / X</button>
+    <button onclick="switchPlatform('facebook')">Facebook</button>
+  </div>
 </div>
 
 <div class="container">
   <!-- Scrape Panel -->
   <div class="panel">
     <h2>Scrape Posts</h2>
-    <div class="row">
+    <!-- Instagram controls -->
+    <div id="igControls" class="row">
       <div>
         <div class="label">Keyword</div>
-        <input type="text" id="keyword" placeholder="e.g. fitness, skincare..." style="width:220px">
+        <input type="text" id="keyword" placeholder="e.g. fitness, skincare" style="width:220px" title="Comma-separated for multi-keyword search">
       </div>
       <div>
         <div class="label">User Limit</div>
@@ -86,8 +102,46 @@
         <div class="label">Posts/User</div>
         <input type="number" id="postLimit" value="6" min="1" max="50" style="width:80px">
       </div>
+      <div>
+        <div class="label">Exclude Keywords</div>
+        <input type="text" id="igExclude" placeholder="e.g. spam, ads" style="width:180px" title="Comma-separated keywords to exclude">
+      </div>
       <button class="btn btn-primary" id="btnSearch" onclick="doSearch()">Search & Scrape</button>
       <button class="btn btn-secondary" id="btnExplore" onclick="doExplore()">Explore Trending</button>
+    </div>
+    <!-- Twitter controls -->
+    <div id="twControls" class="row" style="display:none">
+      <div>
+        <div class="label">Search Query</div>
+        <input type="text" id="twKeyword" placeholder="e.g. react, AI tools" style="width:260px" title="Comma-separated for multi-keyword search">
+      </div>
+      <div>
+        <div class="label">Limit</div>
+        <input type="number" id="twLimit" value="15" min="1" max="50" style="width:80px">
+      </div>
+      <div>
+        <div class="label">Exclude Keywords</div>
+        <input type="text" id="twExclude" placeholder="e.g. spam, ads" style="width:180px" title="Comma-separated keywords to exclude">
+      </div>
+      <button class="btn btn-primary" id="btnTwSearch" onclick="doTwitterSearch()">Search Tweets</button>
+      <button class="btn btn-secondary" id="btnTwTrending" onclick="doTwitterTrending()">Trending</button>
+    </div>
+    <!-- Facebook controls -->
+    <div id="fbControls" class="row" style="display:none">
+      <div>
+        <div class="label">Search Query</div>
+        <input type="text" id="fbKeyword" placeholder="e.g. marketing, tech news" style="width:260px" title="Comma-separated for multi-keyword search">
+      </div>
+      <div>
+        <div class="label">Limit</div>
+        <input type="number" id="fbLimit" value="10" min="1" max="50" style="width:80px">
+      </div>
+      <div>
+        <div class="label">Exclude Keywords</div>
+        <input type="text" id="fbExclude" placeholder="e.g. 小牛, Pure JSQ" style="width:220px" title="Comma-separated keywords to exclude">
+      </div>
+      <button class="btn btn-primary" id="btnFbSearch" onclick="doFacebookSearch()">Search Posts</button>
+      <button class="btn btn-secondary" id="btnFbFeed" onclick="doFacebookFeed()">My Feed</button>
     </div>
     <div id="scrapeStatus" style="margin-top:8px; font-size:13px; color:#888;"></div>
   </div>
@@ -112,8 +166,28 @@
   <!-- Comment Panel -->
   <div class="panel">
     <h2>Batch Comment</h2>
+    <div class="row" style="margin-bottom:10px; gap:8px; align-items:flex-end;">
+      <div>
+        <div class="label">Tone</div>
+        <select id="aiTone" style="border:1px solid #ddd; border-radius:8px; padding:7px 10px; font-size:13px;">
+          <option value="friendly">Friendly</option>
+          <option value="professional">Professional</option>
+          <option value="funny">Funny</option>
+          <option value="promotional">Promotional</option>
+        </select>
+      </div>
+      <div>
+        <div class="label">Language</div>
+        <select id="aiLang" style="border:1px solid #ddd; border-radius:8px; padding:7px 10px; font-size:13px;">
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+          <option value="both">Bilingual</option>
+        </select>
+      </div>
+      <button class="btn btn-sm" id="btnAiSuggest" onclick="doAiSuggest()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;">✨ AI Suggest</button>
+    </div>
     <div class="comment-bar">
-      <input type="text" id="commentText" placeholder="Enter your comment text here...">
+      <input type="text" id="commentText" placeholder="Enter your comment text here... or use AI Suggest ✨">
       <button class="btn btn-primary" id="btnComment" onclick="doComment()">Send Comments</button>
     </div>
     <div id="commentStatus" style="margin-top:8px; font-size:13px; color:#888;"></div>
@@ -124,13 +198,37 @@
     <h2>Comment Tasks</h2>
     <div id="tasksList"></div>
   </div>
+
+  <!-- Comment History Panel -->
+  <div class="panel">
+    <h2>Comment History</h2>
+    <div class="toolbar">
+      <button class="btn btn-secondary btn-sm" onclick="loadHistory()">Refresh</button>
+      <button class="btn btn-danger btn-sm" onclick="clearHistory()">Clear History</button>
+      <input type="text" id="historyFilter" placeholder="Filter history..." oninput="renderHistory()" style="margin-left:auto; width:200px;">
+    </div>
+    <div id="historyTable"></div>
+  </div>
 </div>
 
 <script>
 let posts = [];
+let currentPlatform = 'instagram';
 const BASE = window.location.protocol === 'file:'
   ? 'http://localhost:3456'
   : '';
+
+function switchPlatform(platform) {
+  currentPlatform = platform;
+  document.getElementById('igControls').style.display = platform === 'instagram' ? 'flex' : 'none';
+  document.getElementById('twControls').style.display = platform === 'twitter' ? 'flex' : 'none';
+  document.getElementById('fbControls').style.display = platform === 'facebook' ? 'flex' : 'none';
+  const map = { instagram: 'instagram', twitter: 'twitter', facebook: 'facebook' };
+  document.querySelectorAll('.platform-toggle button').forEach(btn => {
+    const txt = btn.textContent.toLowerCase();
+    btn.classList.toggle('active', txt.includes(map[platform]));
+  });
+}
 
 async function api(method, url, body) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } };
@@ -147,7 +245,7 @@ async function loadPosts() {
 function renderPosts() {
   const filter = document.getElementById('filterInput').value.toLowerCase();
   const filtered = filter
-    ? posts.filter(p => p.username.toLowerCase().includes(filter) || (p.caption || '').toLowerCase().includes(filter) || (p.keyword || '').toLowerCase().includes(filter))
+    ? posts.filter(p => p.username.toLowerCase().includes(filter) || (p.caption || '').toLowerCase().includes(filter) || (p.keyword || '').toLowerCase().includes(filter) || (p.platform || '').toLowerCase().includes(filter))
     : posts;
 
   document.getElementById('statTotal').textContent = posts.length;
@@ -162,9 +260,10 @@ function renderPosts() {
   let html = `<table>
     <tr>
       <th style="width:30px"></th>
+      <th>Platform</th>
       <th>User</th>
       <th>Caption</th>
-      <th>Post URL</th>
+      <th>Link</th>
       <th>Likes</th>
       <th>Comments</th>
       <th>Source</th>
@@ -173,18 +272,32 @@ function renderPosts() {
     </tr>`;
 
   for (const p of filtered) {
+    const platformBadge = p.platform === 'twitter'
+      ? '<span class="badge badge-twitter">Twitter</span>'
+      : p.platform === 'facebook'
+        ? '<span class="badge badge-facebook">Facebook</span>'
+        : '<span class="badge badge-ig">IG</span>';
     const sourceBadge = p.source === 'search'
-      ? `<span class="badge badge-search">search: ${p.keyword}</span>`
-      : '<span class="badge badge-explore">explore</span>';
+      ? `<span class="badge badge-search">search: ${esc(p.keyword)}</span>`
+      : p.source === 'trending'
+        ? '<span class="badge badge-trending">trending</span>'
+        : '<span class="badge badge-explore">explore</span>';
     const statusBadges = [];
     if (p.selected) statusBadges.push('<span class="badge badge-selected">selected</span>');
     if (p.commented) statusBadges.push('<span class="badge badge-done">commented</span>');
 
+    const linkHtml = p.platform === 'twitter' && p.tweetUrl
+      ? `<a href="${esc(p.tweetUrl)}" target="_blank">Tweet</a>`
+      : p.platform === 'facebook' && p.postUrl
+        ? `<a href="${esc(p.postUrl)}" target="_blank">Post</a>`
+        : `<a href="https://www.instagram.com/${encodeURIComponent(p.username)}/" target="_blank" title="Post #${p.index}">Post #${p.index}</a>`;
+
     html += `<tr>
       <td><input type="checkbox" ${p.selected ? 'checked' : ''} onchange="toggleSelect('${p.id}')"></td>
+      <td>${platformBadge}</td>
       <td class="username-cell">@${esc(p.username)}</td>
       <td class="caption-cell">${esc((p.caption || '').slice(0, 150))}${(p.caption || '').length > 150 ? '...' : ''}</td>
-      <td><a href="https://www.instagram.com/${encodeURIComponent(p.username)}/" target="_blank" title="Open profile, post #${p.index}">Post #${p.index}</a></td>
+      <td>${linkHtml}</td>
       <td>${p.likes}</td>
       <td>${p.comments}</td>
       <td>${sourceBadge}</td>
@@ -228,13 +341,14 @@ async function doSearch() {
   if (!keyword) return alert('Please enter a keyword');
   const userLimit = parseInt(document.getElementById('userLimit').value) || 5;
   const postLimit = parseInt(document.getElementById('postLimit').value) || 6;
+  const exclude = document.getElementById('igExclude').value.trim();
 
   const btn = document.getElementById('btnSearch');
   btn.disabled = true;
   document.getElementById('scrapeStatus').innerHTML = 'Scraping... <span class="loading"></span>';
 
   try {
-    const result = await api('POST', '/api/scrape/search', { keyword, userLimit, postLimit });
+    const result = await api('POST', '/api/scrape/search', { keyword, userLimit, postLimit, exclude });
     document.getElementById('scrapeStatus').textContent = `Done! Added ${result.added} posts (total: ${result.total})`;
     await loadPosts();
   } catch (err) {
@@ -257,6 +371,105 @@ async function doExplore() {
     document.getElementById('scrapeStatus').textContent = `Error: ${err.message}`;
   } finally {
     btn.disabled = false;
+  }
+}
+
+async function doTwitterSearch() {
+  const keyword = document.getElementById('twKeyword').value.trim();
+  if (!keyword) return alert('Please enter a search query');
+  const limit = parseInt(document.getElementById('twLimit').value) || 15;
+  const exclude = document.getElementById('twExclude').value.trim();
+
+  const btn = document.getElementById('btnTwSearch');
+  btn.disabled = true;
+  document.getElementById('scrapeStatus').innerHTML = 'Searching Twitter... <span class="loading"></span>';
+
+  try {
+    const result = await api('POST', '/api/scrape/twitter/search', { keyword, limit, exclude });
+    document.getElementById('scrapeStatus').textContent = `Done! Added ${result.added} tweets (total: ${result.total})`;
+    await loadPosts();
+  } catch (err) {
+    document.getElementById('scrapeStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doTwitterTrending() {
+  const btn = document.getElementById('btnTwTrending');
+  btn.disabled = true;
+  document.getElementById('scrapeStatus').innerHTML = 'Fetching trending... <span class="loading"></span>';
+
+  try {
+    const result = await api('POST', '/api/scrape/twitter/trending', { limit: 20 });
+    document.getElementById('scrapeStatus').textContent = `Done! Added ${result.added} tweets (total: ${result.total})`;
+    await loadPosts();
+  } catch (err) {
+    document.getElementById('scrapeStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doFacebookSearch() {
+  const keyword = document.getElementById('fbKeyword').value.trim();
+  if (!keyword) return alert('Please enter a search query');
+  const limit = parseInt(document.getElementById('fbLimit').value) || 10;
+  const exclude = document.getElementById('fbExclude').value.trim();
+
+  const btn = document.getElementById('btnFbSearch');
+  btn.disabled = true;
+  document.getElementById('scrapeStatus').innerHTML = 'Searching Facebook... <span class="loading"></span>';
+
+  try {
+    const result = await api('POST', '/api/scrape/facebook/search', { keyword, limit, exclude });
+    document.getElementById('scrapeStatus').textContent = `Done! Added ${result.added} posts (total: ${result.total})`;
+    await loadPosts();
+  } catch (err) {
+    document.getElementById('scrapeStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doFacebookFeed() {
+  const btn = document.getElementById('btnFbFeed');
+  btn.disabled = true;
+  document.getElementById('scrapeStatus').innerHTML = 'Fetching Facebook feed... <span class="loading"></span>';
+
+  try {
+    const result = await api('POST', '/api/scrape/facebook/feed', { limit: 10 });
+    document.getElementById('scrapeStatus').textContent = `Done! Added ${result.added} posts (total: ${result.total})`;
+    await loadPosts();
+  } catch (err) {
+    document.getElementById('scrapeStatus').textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function doAiSuggest() {
+  const selected = posts.filter(p => p.selected && !p.commented);
+  if (selected.length === 0) return alert('Please select some posts first');
+
+  const tone = document.getElementById('aiTone').value;
+  const language = document.getElementById('aiLang').value;
+  const btn = document.getElementById('btnAiSuggest');
+  btn.disabled = true;
+  btn.textContent = '⏳ Thinking...';
+
+  try {
+    const result = await api('POST', '/api/suggest', { tone, language });
+    if (result.error) {
+      alert('AI Suggest failed: ' + result.error);
+    } else {
+      document.getElementById('commentText').value = result.suggestion;
+    }
+  } catch (err) {
+    alert('AI Suggest failed: ' + (err.message || 'Unknown error'));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ AI Suggest';
   }
 }
 
@@ -290,9 +503,10 @@ async function pollTasks() {
   const running = tasks.some(t => t.status !== 'done');
   if (running) {
     clearTimeout(taskPollTimer);
-    taskPollTimer = setTimeout(() => { pollTasks(); loadPosts(); }, 3000);
+    taskPollTimer = setTimeout(() => { pollTasks(); loadPosts(); loadHistory(); }, 3000);
   } else {
     await loadPosts();
+    await loadHistory();
   }
 }
 
@@ -319,9 +533,71 @@ function renderTasks(tasks) {
   document.getElementById('tasksList').innerHTML = html;
 }
 
+// --- Comment History ---
+let history = [];
+
+async function loadHistory() {
+  history = await api('GET', '/api/history');
+  renderHistory();
+}
+
+function renderHistory() {
+  const filter = (document.getElementById('historyFilter').value || '').toLowerCase();
+  const filtered = filter
+    ? history.filter(h => h.username.toLowerCase().includes(filter) || h.commentText.toLowerCase().includes(filter) || h.platform.toLowerCase().includes(filter) || (h.caption || '').toLowerCase().includes(filter))
+    : history;
+
+  if (filtered.length === 0) {
+    document.getElementById('historyTable').innerHTML = '<div class="empty">No comment history yet.</div>';
+    return;
+  }
+
+  let html = `<table>
+    <tr>
+      <th>Platform</th>
+      <th>User / Target</th>
+      <th>Post Content</th>
+      <th>Comment Sent</th>
+      <th>Link</th>
+      <th>Time</th>
+    </tr>`;
+
+  for (const h of [...filtered].reverse()) {
+    const platformBadge = h.platform === 'twitter'
+      ? '<span class="badge badge-twitter">Twitter</span>'
+      : h.platform === 'facebook'
+        ? '<span class="badge badge-facebook">Facebook</span>'
+        : '<span class="badge badge-ig">IG</span>';
+
+    const linkHtml = h.postUrl
+      ? `<a href="${esc(h.postUrl)}" target="_blank">View</a>`
+      : h.postIndex ? `Post #${h.postIndex}` : '-';
+
+    const time = h.commentedAt ? new Date(h.commentedAt).toLocaleString() : '-';
+
+    html += `<tr>
+      <td>${platformBadge}</td>
+      <td class="username-cell">@${esc(h.username)}</td>
+      <td class="caption-cell">${esc((h.caption || '').slice(0, 100))}${(h.caption || '').length > 100 ? '...' : ''}</td>
+      <td style="max-width:250px; word-break:break-word;">${esc(h.commentText)}</td>
+      <td>${linkHtml}</td>
+      <td style="white-space:nowrap; font-size:12px; color:#888;">${time}</td>
+    </tr>`;
+  }
+  html += '</table>';
+  document.getElementById('historyTable').innerHTML = html;
+}
+
+async function clearHistory() {
+  if (!confirm('Clear all comment history?')) return;
+  await api('DELETE', '/api/history');
+  await loadHistory();
+}
+
 // Init
 loadPosts();
 pollTasks();
+loadHistory();
 </script>
 </body>
 </html>
